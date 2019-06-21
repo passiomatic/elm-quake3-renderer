@@ -7,7 +7,7 @@ module Camera exposing
     , view
     )
 
-{-| A camera with a position and a look direction given by a up-down Z axis and a left-right X axis.
+{-| A camera with a position and a look direction given by a up-down X axis and a left-right Z axis.
 
 Adapted from <https://learnopengl.com/Getting-started/Camera>
 

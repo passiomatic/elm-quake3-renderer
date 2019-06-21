@@ -384,7 +384,7 @@ view model =
 
 readyMessage =
     [ ( "Arrows", " Walk/turn" )
-    , ( "Alt+Arrows", " Strife" )
+    , ( "Alt+Arrows", " Strafe" )
     , ( "A", " Look up" )
     , ( "Z", " Look down" )
 
@@ -596,10 +596,10 @@ movement on altOn keyCode =
             LookDown
 
         ( True, 37, True ) ->
-            StrifeLeft
+            StrafeLeft
 
         ( True, 39, True ) ->
-            StrifeRight
+            StrafeRight
 
         _ ->
             Idle

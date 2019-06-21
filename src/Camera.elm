@@ -20,8 +20,8 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 type Movement
     = TurnLeft
     | TurnRight
-    | StrifeLeft
-    | StrifeRight
+    | StrafeLeft
+    | StrafeRight
     | LookUp
     | LookDown
     | WalkForward
@@ -105,12 +105,12 @@ update dt movement ({ direction, xAngle, zAngle } as camera) =
 
         xDirection =
             case movement of
-                StrifeLeft ->
+                StrafeLeft ->
                     Vec3.cross newDirection Vec3.k
                         |> Vec3.normalize
                         |> Vec3.scale -speed
 
-                StrifeRight ->
+                StrafeRight ->
                     Vec3.cross newDirection Vec3.k
                         |> Vec3.normalize
                         |> Vec3.scale speed

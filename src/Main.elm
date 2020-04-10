@@ -609,7 +609,7 @@ movement on altOn keyCode =
 -- MAIN
 
 
-main : Program Value Model Msg
+main : Program () Model Msg
 main =
     Browser.element
         { init = \_ -> init

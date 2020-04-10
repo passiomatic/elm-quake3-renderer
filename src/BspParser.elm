@@ -569,21 +569,6 @@ trimNulls string =
     String.replace "\u{0000}" "" string
 
 
-{-| Printable arena stats.
--}
-stats : Arena -> String
-stats arena =
-    [ String.fromInt (Array.length arena.vertices) ++ " vertices"
-    , String.fromInt (Array.length arena.shaders) ++ " shaders"
-    , String.fromInt (List.length arena.lightmaps) ++ " lightmaps"
-    , String.fromInt (Array.length arena.faces) ++ " faces"
-    , String.fromInt (Array.length arena.brushes) ++ " brushes"
-    , String.fromInt (Array.length arena.models) ++ " models"
-    , String.fromInt (Array.length arena.effects) ++ " effects"
-    ]
-        |> String.join ", "
-
-
 boundingBox : Arena -> Maybe BoundingBox
 boundingBox arena =
     -- Grab the first model, which correponds to the base portion of the map

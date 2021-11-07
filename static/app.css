@@ -2,8 +2,10 @@ body {
   font: normal 16px/1.5em -apple-system, system-ui, "Helvetica Neue", Calibri, Arial, sans-serif;
   color: #e7d5c4;
   background: #000 url(./splash.jpg) no-repeat center center;
+  background-size: contain;
   height: 100vh;
   width: 100vw;
+  overflow: hidden;
 }
 
 #canvas {
@@ -12,16 +14,25 @@ body {
 
 #dashboard {
   position: absolute;
-  left: 1.5em; 
-  right: 1.5em;
-  bottom: 1.5em;
+  left: 1em; 
+  right: 1em;
+  bottom: 1em;
   background: rgba(53, 49, 45, 0.8);
-  padding: .75em 1.5em;
+  padding: .5em .5em;
   text-shadow: 1px 1px 1px #35312d;
   display: flex;
   z-index: 2;
   border-radius: 3px;
 }    
+
+@media screen and (min-width: 768px) {
+  #dashboard {
+    right: 1.5em;
+    bottom: 1.5em;    
+    bottom: 1.5em;    
+    padding: .75em 1.5em;
+  }    
+}
 
 #fps {
   font-size: 24px;
@@ -36,8 +47,10 @@ body {
   border-right: 1px solid rgb(231, 213, 196, .5);
 }
 
-.slot-arena {
-  margin-left: auto; 
+@media screen and (min-width: 768px) {
+  .slot-arena {
+    margin-left: auto; 
+  }
 }
 
 .slot-options {
@@ -55,8 +68,16 @@ body {
   border-radius: 3px;
 }
 
+
 .control {
-  padding-right: 1.5em;
+  display: none;
+}
+
+@media screen and (min-width: 768px) {
+  .control {
+    display: block;
+    padding-right: 1.5em;    
+  }
 }
 
 kbd {

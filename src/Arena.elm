@@ -8,6 +8,7 @@ module Arena exposing
     , ModelLump
     , PlayerSpawnPoint
     , boundingBox
+    , defaultPlayerSpawnPoint
     , playerSpawnPoints
     , stats
     , worldInfo
@@ -16,13 +17,14 @@ module Arena exposing
 {-| Arena (.bsp) file data structures.
 -}
 
+--import Math.Vector4 as Vec4 exposing (Vec4, vec4)
+
 import Array exposing (Array)
 import BoundingBox exposing (BoundingBox)
 import Dict exposing (Dict)
 import GameParser exposing (GameEntity, Value(..))
 import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
---import Math.Vector4 as Vec4 exposing (Vec4, vec4)
 import Plane exposing (Plane)
 import Shaders.Pipeline exposing (Vertex)
 import Shaders.ShaderDef exposing (ShaderDef)
@@ -96,6 +98,7 @@ type alias BrushLump =
     }
 
 
+
 -- type alias BrushSideLump =
 --     { planeIndex : Int
 --     , shaderIndex : Int
@@ -121,6 +124,12 @@ type alias PlayerSpawnPoint =
     , angle : Float
 
     --, flags: Int
+    }
+
+
+defaultPlayerSpawnPoint =
+    { origin = vec3 0 0 0
+    , angle = 0
     }
 
 

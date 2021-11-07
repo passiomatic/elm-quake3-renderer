@@ -22,6 +22,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Process
 import Scene exposing (Scene)
+import SelectList exposing (SelectList)
 import Shaders.Pipeline as Pipeline exposing (ShaderPipeline, Vertex)
 import Sky
 import Task exposing (Task)
@@ -87,6 +88,7 @@ type alias World =
     , elapsedTime : Float
     , cameraDidMove : Bool
     , arenaName : String
+    , spawnPoints : SelectList PlayerSpawnPoint
 
     -- Diagnostics
     , fps : List Float
@@ -96,7 +98,7 @@ type alias World =
     }
 
 
-initialWorld name scene camera =
+initialWorld name scene camera spawnPoints =
     { movement = Idle
     , viewport = { width = 0, height = 0 }
     , arena = scene.arena
@@ -108,6 +110,7 @@ initialWorld name scene camera =
     , camera = camera
     , cameraDidMove = False
     , arenaName = name
+    , spawnPoints = spawnPoints
     , fps = []
     , averageFps = 0
     , drawLeafBoundingBox = False
@@ -125,8 +128,9 @@ init =
 type Msg
     = TextureLoaded String (Result Texture.Error Texture)
     | ArenaLoaded (Result String Arena)
-    | ArenaCompiled Scene Camera
+    | ArenaCompiled Scene (SelectList PlayerSpawnPoint)
     | KeyChanged Bool Keys
+    | KeyPressed Keys
     | Tick Float
     | GotViewport Dom.Viewport
     | Resized Int Int
@@ -203,12 +207,15 @@ update action model =
                 _ ->
                     ( model, Cmd.none )
 
-        ArenaCompiled scene camera ->
+        ArenaCompiled scene spawnPoints ->
             case model of
                 Compiling name ->
                     let
+                        camera =
+                            moveCameraAt (SelectList.selected spawnPoints)
+
                         world =
-                            initialWorld name scene camera
+                            initialWorld name scene camera spawnPoints
 
                         cmds =
                             [ loadTextures scene.textures
@@ -219,6 +226,26 @@ update action model =
                     ( Ready world
                     , Cmd.batch <| Task.perform GotViewport Dom.getViewport :: cmds
                     )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        KeyPressed keys ->
+            case model of
+                Ready world ->
+                    -- R key
+                    if keys.keyCode == 114 then
+                        let
+                            newSpawnPoints =
+                                SelectList.selectWhileLoopBy 1 world.spawnPoints
+
+                            newCamera =
+                                moveCameraAt (SelectList.selected newSpawnPoints)
+                        in
+                        ( Ready { world | camera = newCamera, spawnPoints = newSpawnPoints, cameraDidMove = True }, Cmd.none )
+
+                    else
+                        ( model, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -322,27 +349,28 @@ compileCmd arena =
                         Scene.compile arena
 
                     spawnPoints =
-                        Arena.playerSpawnPoints arena
-
-                    camera =
-                        moveCameraAt (List.head spawnPoints)
+                        selectSpawnPoints (Arena.playerSpawnPoints arena)
                 in
-                ArenaCompiled scene camera
+                ArenaCompiled scene spawnPoints
             )
 
 
-moveCameraAt : Maybe PlayerSpawnPoint -> Camera
-moveCameraAt maybeSpawnPoint =
-    case maybeSpawnPoint of
-        Just spawnPoint ->
-            let
-                position =
-                    Vec3.add spawnPoint.origin (vec3 0 0 eyeLevel)
-            in
-            Camera.init position spawnPoint.angle
+selectSpawnPoints spawns =
+    case spawns of
+        first :: rest ->
+            SelectList.fromLists [] first rest
 
-        Nothing ->
-            Camera.default
+        [] ->
+            SelectList.singleton Arena.defaultPlayerSpawnPoint
+
+
+moveCameraAt : PlayerSpawnPoint -> Camera
+moveCameraAt spawnPoint =
+    let
+        position =
+            Vec3.add spawnPoint.origin (vec3 0 0 eyeLevel)
+    in
+    Camera.init position spawnPoint.angle
 
 
 
@@ -388,8 +416,7 @@ readyMessage =
     , ( "Alt+Arrows", " Strafe" )
     , ( "A", " Look up" )
     , ( "Z", " Look down" )
-
-    --, ( "R", " Respawn" )
+    , ( "R", " Respawn" )
     ]
         |> List.map
             (\( key, label ) ->
@@ -542,6 +569,7 @@ subscriptions model =
                 [ animationFrameDelta world.isTicking
                 , E.onKeyDown (Decode.map (KeyChanged True) keysDecoder)
                 , E.onKeyUp (Decode.map (KeyChanged False) keysDecoder)
+                , E.onKeyPress (Decode.map KeyPressed keysDecoder)
                 , E.onResize Resized
 
                 -- Recalculate average FPS every second

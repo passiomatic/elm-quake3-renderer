@@ -73,7 +73,8 @@ tessellate level ( width, height ) patch =
                     subdividePatch level c0 c1 c2 c3 c4 c5 c6 c7 c8 accum
 
                 _ ->
-                    Debug.todo "Invalid number of points for subdividePatch"
+                    --Debug.todo "Invalid number of points for subdividePatch"
+                    accum 
     in
     -- Loop thru the patch, one column at time
     List.range 0 (m - 1)

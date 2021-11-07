@@ -196,7 +196,7 @@ parsePlanes data { offset, length } =
             )
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse planes lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse planes lump, skipped." err)
         |> Result.toMaybe
 
 
@@ -216,7 +216,7 @@ parseVertices data { offset, length } =
             |> P.map Array.fromList
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse vertices lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse vertices lump, skipped." err)
         |> Result.toMaybe
 
 
@@ -240,7 +240,7 @@ parseShaders data { offset, length } =
             )
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse shaders lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse shaders lump, skipped." err)
         |> Result.toMaybe
 
 
@@ -262,7 +262,7 @@ parseFaces data { offset, length } =
             )
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse faces lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse faces lump, skipped." err)
         |> Result.toMaybe
 
 
@@ -302,7 +302,7 @@ parseNodes data { offset, length } =
             )
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse BSP nodes lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse BSP nodes lump, skipped." err)
         |> Result.toMaybe
 
 
@@ -326,7 +326,7 @@ parseLeaves data { offset, length } =
             )
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse BSP leaves lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse BSP leaves lump, skipped." err)
         |> Result.toMaybe
 
 
@@ -353,7 +353,7 @@ parseModels data { offset, length } =
             )
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse models lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse models lump, skipped." err)
         |> Result.toMaybe
 
 
@@ -379,7 +379,7 @@ parseBrushes data { offset, length } =
             )
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse brushes lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse brushes lump, skipped." err)
         |> Result.toMaybe
 
 
@@ -401,7 +401,7 @@ parseBrushSides data { offset, length } =
             )
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse brush planes lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse brush planes lump, skipped." err)
         |> Result.toMaybe
 
 
@@ -423,7 +423,7 @@ parseLightmaps data { offset, length } =
             (P.repeat lightmapParser (length // lightmapSizeInBytes))
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse lightmaps lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse lightmaps lump, skipped." err)
         |> Result.toMaybe
 
 
@@ -474,7 +474,7 @@ parseEffects data { offset, length } =
             )
         )
         data
-        |> Result.mapError (\err -> Debug.log "Failed to parse effects lump, skipped." err)
+        --|> Result.mapError (\err -> Debug.log "Failed to parse effects lump, skipped." err)
         |> Result.toMaybe
 
 

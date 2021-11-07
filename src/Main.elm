@@ -169,7 +169,8 @@ update action model =
                                     Dict.insert name texture world.textures
 
                                 Err _ ->
-                                    Debug.log ("Couldn't load texture " ++ name ++ ", skipped") world.textures
+                                    --Debug.log ("Couldn't load texture " ++ name ++ ", skipped") world.textures
+                                    world.textures
                     in
                     ( Ready
                         { world
@@ -186,12 +187,12 @@ update action model =
                 Loading name ->
                     case resultArena of
                         Ok arena ->
-                            let
-                                _ =
-                                    Debug.log
-                                        ("Parsed arena: " ++ Arena.stats arena)
-                                        True
-                            in
+                            -- let
+                            --     _ =
+                            --         Debug.log
+                            --             ("Parsed arena: " ++ Arena.stats arena)
+                            --             True
+                            -- in
                             ( Compiling name
                             , compileCmd arena
                             )
@@ -508,7 +509,8 @@ loadTextures textures =
                     Task.attempt (TextureLoaded name) (Texture.loadWith options (baseUrl ++ url)) :: accum
 
                 Nothing ->
-                    Debug.log ("Couldn't lookup texture " ++ name ++ ", skipped") accum
+                    --Debug.log ("Couldn't lookup texture " ++ name ++ ", skipped") accum
+                    accum
         )
         []
         textures

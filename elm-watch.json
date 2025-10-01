@@ -1,0 +1,10 @@
+{
+    "targets": {
+        "Quake3": {
+            "inputs": [
+                "src/Main.elm"
+            ],
+            "output": "static/app.js"
+        }
+    }
+}

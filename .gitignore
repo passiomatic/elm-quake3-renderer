@@ -1,6 +1,10 @@
+node_modules
+build
+
 # elm-package generated files
 elm-stuff
 # elm-repl generated files
 repl-temp-*
 # macOS
 .DS_Store
+

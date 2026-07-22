@@ -248,7 +248,7 @@ shaderParser : Parser c e ShaderDef
 shaderParser = 
     P.succeed ShaderDef.resolve
         |> P.keep (P.map trimNulls (P.string 64))
-        |> P.skip 4
+        |> P.keep (P.signedInt32 LE)
         |> P.skip 4
 
 

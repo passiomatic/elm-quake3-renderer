@@ -80,6 +80,7 @@ This is used to describe default and custom WebGL shaders.
 type alias ShaderPipeline =
     { sortOrder : SortOrder
     , flags : Int
+    -- , contentsFlags: Int
     , lightmap : String
     , mesh : Maybe (Mesh Vertex)
     , stages : List Stage
@@ -133,6 +134,7 @@ empty : ShaderPipeline
 empty =
     { sortOrder = Opaque
     , flags = 0
+    -- , contentsFlags = 0
     , lightmap = "$whiteimage"
     , mesh = Nothing
     , stages = []

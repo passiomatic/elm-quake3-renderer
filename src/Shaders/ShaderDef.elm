@@ -17,11 +17,15 @@ type ShaderDef
     | UseTexture TextureDef
 
 
-resolve : String -> ShaderDef
-resolve name =
+resolve : String -> Int -> ShaderDef
+resolve name flags =
     case Dict.get name shaderLookup of
-        Just shaderDef ->
-            Custom shaderDef
+        Just pipeline ->
+            let
+                newPipeline =
+                    { pipeline | flags = flags }
+            in
+            Custom newPipeline
 
         Nothing ->
             UseTexture (Pipeline.withTexture name)

@@ -74,7 +74,7 @@ void main(void) {
 -}
 textures_skies_killsky = 
     empty
-    |> setSkyFlag
+    -- |> setSkyFlag
     |> addStage
             { vertexShader = textures_skies_killsky_vertex_0
             , fragmentShader = textures_skies_killsky_fragment_0

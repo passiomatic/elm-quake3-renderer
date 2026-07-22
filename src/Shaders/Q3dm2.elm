@@ -2063,7 +2063,7 @@ void main(void) {
 -}
 textures_skies_toxicskytim_dm5 = 
     empty
-    |> setSkyFlag
+    -- |> setSkyFlag
     |> addStage
             { vertexShader = textures_skies_toxicskytim_dm5_vertex_0
             , fragmentShader = textures_skies_toxicskytim_dm5_fragment_0

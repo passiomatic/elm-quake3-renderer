@@ -3047,7 +3047,7 @@ void main(void) {
 -}
 textures_skies_tim_hell = 
     empty
-    |> setSkyFlag
+    -- |> setSkyFlag
     |> addStage
             { vertexShader = textures_skies_tim_hell_vertex_0
             , fragmentShader = textures_skies_tim_hell_fragment_0

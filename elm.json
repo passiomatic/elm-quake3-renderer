@@ -3,7 +3,7 @@
     "source-directories": [
         "src"
     ],
-    "elm-version": "0.19.1",
+    "elm-version": "0.19.2",
     "dependencies": {
         "direct": {
             "danfishgold/base64-bytes": "1.0.1",
@@ -28,7 +28,11 @@
         }
     },
     "test-dependencies": {
-        "direct": {},
-        "indirect": {}
+        "direct": {
+            "elm-explorations/test": "2.2.1"
+        },
+        "indirect": {
+            "elm/random": "1.0.0"
+        }
     }
 }

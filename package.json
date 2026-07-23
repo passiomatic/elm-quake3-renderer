@@ -1,12 +1,14 @@
 {
   "scripts": {
-    "dev": "elm-watch hot"
+    "dev": "elm-watch hot",
+    "test": "elm-test"
   },
   "devDependencies": {
+    "elm-test": "^0.19.2-0",
     "elm-watch": "^1.2.3"
   },
   "dependencies": {
-    "elm": "^0.19.1-6",
+    "elm": "^0.19.2-0",
     "elm-format": "^0.8.8"
   }
 }

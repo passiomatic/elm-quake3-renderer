@@ -1,4 +1,4 @@
-module Plane exposing (Plane, isInFront)
+module Plane exposing (Plane, distance, isInFront)
 
 import Math.Vector3 as Vec3 exposing (Vec3)
 
@@ -11,6 +11,13 @@ type alias Plane =
     }
 
 
+{-| Signed distance of a point from the plane: positive in front, negative behind, zero on it.
+-}
+distance : Plane -> Vec3 -> Float
+distance plane position =
+    Vec3.dot plane.normal position - plane.distance
+
+
 isInFront : Plane -> Vec3 -> Bool
 isInFront plane position =
-    (Vec3.dot plane.normal position) - plane.distance >= 0
+    distance plane position >= 0

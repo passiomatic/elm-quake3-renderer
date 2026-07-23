@@ -1,4 +1,4 @@
-module Shaders.ShaderDef exposing (ShaderDef(..), ShaderInfo, isSky, resolve)
+module Shaders.ShaderDef exposing (ShaderDef(..), ShaderInfo, isSky, isSolid, resolve)
 
 {-| Shader definition.
 
@@ -34,9 +34,18 @@ skySurface =
     0x04
 
 
+contentsSolid =
+    0x01
+
+
 isSky : ShaderInfo -> Bool
 isSky info =
     and info.surfaceFlags skySurface /= 0
+
+
+isSolid : ShaderInfo -> Bool
+isSolid info =
+    and info.contentFlags contentsSolid /= 0
 
 
 resolve : String -> Int -> Int -> ShaderInfo

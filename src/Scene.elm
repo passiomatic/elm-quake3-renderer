@@ -129,10 +129,13 @@ compile arena =
                 (Sky.findShader arena.shaders)
                 (Sky.makeMesh 50)
 
+        groupedFaces =
+            faces
+                |> removeSkyFaces arena.shaders
+                |> groupFaces
+
         shaders =
-            arena.shaders
-                |> removeSkyShader
-                |> makeShaders newVertices (groupFaces faces)
+            makeShaders newVertices groupedFaces arena.shaders
 
 
         -- TODO combine with lightmaps
@@ -345,9 +348,17 @@ sortShaders shaders =
         shaders
 
 
-removeSkyShader : Array ShaderInfo -> Array ShaderInfo
-removeSkyShader infos =
-    Array.filter (\info -> not (ShaderDef.isSky info)) infos
+{-| Drop faces that reference a sky shader; those are rendered separately via `Sky.bindShader`.
+-}
+removeSkyFaces : Array ShaderInfo -> List Face -> List Face
+removeSkyFaces infos faces =
+    List.filter
+        (\face ->
+            Array.get face.shaderIndex infos
+                |> Maybe.map (\info -> not (ShaderDef.isSky info))
+                |> Maybe.withDefault True
+        )
+        faces
 
 
 {-| Group given faces by their shader and lightmap indices.

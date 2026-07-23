@@ -275,6 +275,10 @@ makeShaders vertices groupedFaces infos =
                                         Pipeline.default name (lightmapName lightmapIndex)
 
                         Nothing ->
+                            let
+                                _ = 
+                                    Debug.log("Missing shader index: " ++ String.fromInt shaderIndex) ()
+                            in
                             Pipeline.noShader
             in
             shader

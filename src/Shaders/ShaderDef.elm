@@ -1,8 +1,8 @@
 module Shaders.ShaderDef exposing (ShaderDef(..), ShaderInfo, isSky, resolve)
 
-{-| Shader definition. 
+{-| Shader definition.
 
-List of surface and contents flags: https://tinyurl.com/y3y56yvq
+List of surface and contents flags: <https://tinyurl.com/y3y56yvq>
 
 -}
 
@@ -43,10 +43,16 @@ resolve : String -> Int -> Int -> ShaderInfo
 resolve name surfaceFlags contentFlags =
     case Dict.get name shaderLookup of
         Just pipeline ->
-            { def = Custom pipeline, contentFlags = contentFlags, surfaceFlags = surfaceFlags }
+            { def = Custom pipeline
+            , contentFlags = contentFlags
+            , surfaceFlags = surfaceFlags
+            }
 
         Nothing ->
-            { def = UseTexture (Pipeline.withTexture name), contentFlags = contentFlags, surfaceFlags = surfaceFlags }
+            { def = UseTexture (Pipeline.withTexture name)
+            , contentFlags = contentFlags
+            , surfaceFlags = surfaceFlags
+            }
 
 
 shaderLookup =

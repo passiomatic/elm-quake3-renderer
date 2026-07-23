@@ -1,6 +1,15 @@
-module Bsp.Trace exposing (CheckBrushResult, NodeVisit, Side(..), checkBrush, splitAtNode)
+module Bsp.Trace exposing
+    ( CheckBrushResult
+    , NodeVisit
+    , Side(..)
+    , TraceResult
+    , checkBrush
+    , splitAtNode
+    , trace
+    )
 
 import Brush exposing (Brush)
+import BspTree exposing (BspNode, BspTree(..))
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Plane exposing (Plane)
 
@@ -20,6 +29,7 @@ type alias CheckBrushResult =
     , startsOut : Bool
     , endsOut : Bool
     , allSolid : Bool
+    , plane : Maybe Plane
     }
 
 
@@ -33,6 +43,7 @@ noCollision =
     , startsOut = True
     , endsOut = True
     , allSolid = False
+    , plane = Nothing
     }
 
 
@@ -43,11 +54,13 @@ are exposed as-is, mirroring the tutorial's own bookkeeping variables, rather th
 collapsed into a single "did it collide" answer — deciding whether this brush's
 result beats the closest collision found so far across the *whole* trace needs the
 running fraction from the rest of the BSP walk, which a single-brush function doesn't
-have. That comparison belongs to the caller (the leaf/node walk built in a later step).
+have. That comparison belongs to the caller (the leaf/node walk in `trace` below).
+`plane` is the brush side responsible for `startFraction` (the entry plane) — carried
+forward so a caller can eventually use it for wall-sliding.
 -}
 checkBrush : Vec3 -> Vec3 -> Brush -> CheckBrushResult
 checkBrush start end brush =
-    checkPlanes start end brush.planes { startFraction = -1, endFraction = 1, startsOut = False, endsOut = False }
+    checkPlanes start end brush.planes { startFraction = -1, endFraction = 1, startsOut = False, endsOut = False, plane = Nothing }
         |> Maybe.map resolveAllSolid
         |> Maybe.withDefault noCollision
 
@@ -57,6 +70,7 @@ type alias Acc =
     , endFraction : Float
     , startsOut : Bool
     , endsOut : Bool
+    , plane : Maybe Plane
     }
 
 
@@ -70,6 +84,7 @@ resolveAllSolid acc =
     -- Stuck inside the brush: every plane had the segment behind it the whole way,
     -- i.e. never in front of (outside) any of them.
     , allSolid = not acc.startsOut && not acc.endsOut
+    , plane = acc.plane
     }
 
 
@@ -106,8 +121,15 @@ checkPlanes start end planes acc =
 
             else if startDistance > endDistance then
                 -- Segment enters the brush through this plane.
-                checkPlanes start end rest
-                    { acc_ | startFraction = max acc_.startFraction ((startDistance - epsilon) / (startDistance - endDistance)) }
+                let
+                    fraction =
+                        (startDistance - epsilon) / (startDistance - endDistance)
+                in
+                if fraction > acc_.startFraction then
+                    checkPlanes start end rest { acc_ | startFraction = fraction, plane = Just plane }
+
+                else
+                    checkPlanes start end rest acc_
 
             else
                 -- Segment leaves the brush through this plane.
@@ -218,3 +240,110 @@ splitAtNode plane startFraction endFraction start end =
           , endFraction = endFraction
           }
         ]
+
+
+type alias TraceResult =
+    { fraction : Float
+    , endPosition : Vec3
+    , allSolid : Bool
+    , plane : Maybe Plane
+    }
+
+
+{-| Trace a segment [start, end] through the BSP tree, clipping it against every solid
+brush it passes through, and returning the closest collision found (if any).
+
+Ports the tutorial's outer `Trace`/`CheckNode` combination, using `splitAtNode` at
+nodes and `checkBrush` at each leaf's resolved brushes, threading a running "closest
+collision so far" accumulator through the recursion in place of the tutorial's mutable
+`output*` variables.
+
+Known limitation, carried over as-is from the tutorial rather than fixed here: if the
+trace starts embedded in solid (`allSolid = True`), `fraction` is left untouched by
+whichever brush produced that result — it does *not* get forced to 0. A caller that
+just does `position = result.endPosition` would, in that specific case, still move the
+full requested distance despite being stuck. Worth remembering when wiring this into
+the camera later.
+-}
+trace : BspTree -> Vec3 -> Vec3 -> TraceResult
+trace tree start end =
+    let
+        state =
+            walk tree 0 1 start end { fraction = 1, allSolid = False, plane = Nothing }
+    in
+    { fraction = state.fraction
+    , endPosition =
+        if state.fraction >= 1 then
+            end
+
+        else
+            Vec3.add start (Vec3.scale state.fraction (Vec3.sub end start))
+    , allSolid = state.allSolid
+    , plane = state.plane
+    }
+
+
+type alias TraceState =
+    { fraction : Float
+    , allSolid : Bool
+    , plane : Maybe Plane
+    }
+
+
+walk : BspTree -> Float -> Float -> Vec3 -> Vec3 -> TraceState -> TraceState
+walk tree startFraction endFraction start end state =
+    case tree of
+        Empty ->
+            state
+
+        Leaf leaf ->
+            List.foldl (checkLeafBrush start end startFraction endFraction) state leaf.brushes
+
+        Node node ->
+            splitAtNode node.plane startFraction endFraction start end
+                |> List.foldl (walkVisit node) state
+
+
+walkVisit : BspNode -> NodeVisit -> TraceState -> TraceState
+walkVisit node visit state =
+    let
+        subtree =
+            case visit.side of
+                Front ->
+                    node.front
+
+                Back ->
+                    node.back
+    in
+    walk subtree visit.startFraction visit.endFraction visit.start visit.end state
+
+
+checkLeafBrush : Vec3 -> Vec3 -> Float -> Float -> Brush -> TraceState -> TraceState
+checkLeafBrush start end startFraction endFraction brush state =
+    let
+        result =
+            checkBrush start end brush
+    in
+    if not result.startsOut then
+        -- Tutorial: always returns here regardless of endsOut; only allSolid may change.
+        if result.allSolid then
+            { state | allSolid = True }
+
+        else
+            state
+
+    else if result.startFraction < result.endFraction && result.startFraction > -1 then
+        let
+            -- checkBrush's fractions are local to [start, end]; map back to the whole
+            -- trace's [0, 1] via the slice of it this leaf's segment covers.
+            globalFraction =
+                startFraction + (endFraction - startFraction) * max 0 result.startFraction
+        in
+        if globalFraction < state.fraction then
+            { state | fraction = globalFraction, plane = result.plane }
+
+        else
+            state
+
+    else
+        state

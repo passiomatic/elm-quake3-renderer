@@ -50,6 +50,13 @@ xAngleRange =
     degrees 70
 
 
+{-| Bounding sphere radius used to clip the camera's movement against the map geometry.
+Not used yet — wired into the trace call once sphere-tracing is in place.
+-}
+playerRadius =
+    15
+
+
 zero =
     vec3 0 0 0
 

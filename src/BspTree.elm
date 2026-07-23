@@ -18,11 +18,12 @@ import Plane exposing (Plane)
 import Math.Vector3 as Vector3 exposing (Vec3)
 import BoundingBox exposing (BoundingBox)
 import Arena exposing (BspNodeLump, BspLeafLump)
+import Brush exposing (Brush)
 
 type BspTree
     = Node BspNode
     | Leaf BspLeaf
-    | Empty  
+    | Empty
 
 
 {-| Data for a node in the BSP tree.
@@ -36,32 +37,30 @@ type alias BspNode =
     }
 
 
-{-| Data for a BSP tree leaf. 
+{-| Data for a BSP tree leaf, with its solid brushes already resolved.
 -}
 type alias BspLeaf =
-    -- No real processing needed, just re-export the original lump structure
-    BspLeafLump
-
--- type alias BspLeaf_ =
---     { clusterIndex : Int
---     , boundingBox : BoundingBox
---     , brushes : List Brush 
---     }
+    { clusterIndex : Int
+    , boundingBox : BoundingBox
+    , brushes : List Brush
+    }
 
 
-{-| Build a BSP tree from nodes, leaves, and planes.
+{-| Build a BSP tree from nodes, leaves, planes, and the (leaf -> brush indices)
+indirection table paired with the already-resolved solid brushes.
 -}
-make : Array BspNodeLump -> Array BspLeafLump -> Array Plane -> BspTree
-make nodes leaves planes =
+make : Array BspNodeLump -> Array BspLeafLump -> Array Plane -> Array Int -> Array Brush -> BspTree
+make nodes leaves planes leafBrushIndices brushes =
     -- Start from root node index
-    makeHelp nodes leaves planes 0
+    makeHelp nodes leaves planes leafBrushIndices brushes 0
 
 
-makeHelp : Array BspNodeLump -> Array BspLeafLump -> Array Plane -> Int -> BspTree
-makeHelp nodes leaves planes nodeIndex =
+makeHelp : Array BspNodeLump -> Array BspLeafLump -> Array Plane -> Array Int -> Array Brush -> Int -> BspTree
+makeHelp nodes leaves planes leafBrushIndices brushes nodeIndex =
     -- Leaf?
     if nodeIndex < 0 then
         Array.get (-nodeIndex - 1) leaves
+            |> Maybe.map (makeLeaf leafBrushIndices brushes)
             |> Maybe.map Leaf
             |> Maybe.withDefault Empty
 
@@ -79,13 +78,24 @@ makeHelp nodes leaves planes nodeIndex =
                 Node
                     (BspNode
                         plane
-                        (makeHelp nodes leaves planes node.front)
-                        (makeHelp nodes leaves planes node.back)
+                        (makeHelp nodes leaves planes leafBrushIndices brushes node.front)
+                        (makeHelp nodes leaves planes leafBrushIndices brushes node.back)
                     )
             )
             maybeNode
             maybePlane
             |> Maybe.withDefault Empty
+
+
+makeLeaf : Array Int -> Array Brush -> BspLeafLump -> BspLeaf
+makeLeaf leafBrushIndices brushes lump =
+    { clusterIndex = lump.clusterIndex
+    , boundingBox = lump.boundingBox
+    , brushes =
+        Array.slice lump.firstBrushIndex (lump.firstBrushIndex + lump.brushCount) leafBrushIndices
+            |> Array.toList
+            |> List.filterMap (\index -> Array.get index brushes)
+    }
 
 
 {-| Find which leaf the given position lies in.

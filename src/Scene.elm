@@ -9,6 +9,7 @@ import Array exposing (Array)
 import Bezier
 import BoundingBox exposing (BoundingBox)
 import BspTree exposing (BspTree(..))
+import Brush
 import Dict exposing (Dict)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vector2 exposing (Vec2)
@@ -109,7 +110,11 @@ compile arena =
         tree =
             Maybe.map3
                 (\nodes leaves planes ->
-                    BspTree.make nodes leaves planes
+                    let
+                        brushes =
+                            Brush.makeBrushes planes arena.brushSides arena.shaders arena.brushes
+                    in
+                    BspTree.make nodes leaves planes arena.leafBrushIndices brushes
                 )
                 arena.nodes
                 arena.leaves
@@ -117,9 +122,6 @@ compile arena =
                 -- Unable to create a valid BSP tree
                 |> Maybe.withDefault Empty
 
-        -- TODO use contentFlags value from shaders to filter out faces which do not block player movement
-        -- brushes =
-        --     makeBrushes arena.planes arena.brushSides arena.brushes
         ( newVertices, faces ) =
             makeFaces arena.vertices arena.meshIndices arena.faces
 

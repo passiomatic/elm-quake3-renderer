@@ -1,4 +1,4 @@
-module Shaders.ShaderDef exposing (ShaderDef(..), resolve)
+module Shaders.ShaderDef exposing (ShaderDef(..), ShaderInfo, resolve)
 
 import Dict
 import Shaders.Pipeline as Pipeline exposing (ShaderPipeline, TextureDef)
@@ -15,6 +15,15 @@ A shader often has the same name of the texture the surface needs in order to be
 type ShaderDef
     = Custom ShaderPipeline
     | UseTexture TextureDef
+
+
+{-| Wrap a shader defintion and flags read from the BSP file.
+-}
+type alias ShaderInfo =
+    { def : ShaderDef
+    , contentFlags : Int
+    , surfaceFlags : Int
+    }
 
 
 resolve : String -> Int -> ShaderDef

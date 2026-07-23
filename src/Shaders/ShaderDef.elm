@@ -1,20 +1,17 @@
-module Shaders.ShaderDef exposing (ShaderDef(..), ShaderInfo, resolve)
+module Shaders.ShaderDef exposing (ShaderDef(..), ShaderInfo, isSky, resolve)
 
+{-| Shader definition. 
+
+List of surface and contents flags: https://tinyurl.com/y3y56yvq
+
+-}
+
+import Bitwise exposing (and, or)
 import Dict
 import Shaders.Pipeline as Pipeline exposing (ShaderPipeline, TextureDef)
 import Shaders.Q3dm1 exposing (..)
 import Shaders.Q3dm2 exposing (..)
 import Shaders.Q3dm3 exposing (..)
-
-
-{-| A shader as defined in the BSP file.
-
-A shader often has the same name of the texture the surface needs in order to be properly displayed. When this doesn't happen a custom shader pipeline is specified instead.
-
--}
-type ShaderDef
-    = Custom ShaderPipeline
-    | UseTexture TextureDef
 
 
 {-| Wrap a shader defintion and flags read from the BSP file.
@@ -26,18 +23,30 @@ type alias ShaderInfo =
     }
 
 
-resolve : String -> Int -> ShaderDef
-resolve name flags =
+{-| A shader often has the same name of the texture the surface needs in order to be properly displayed. When this doesn't happen a custom shader pipeline is specified instead.
+-}
+type ShaderDef
+    = Custom ShaderPipeline
+    | UseTexture TextureDef
+
+
+skySurface =
+    0x04
+
+
+isSky : ShaderInfo -> Bool
+isSky info =
+    and info.surfaceFlags skySurface /= 0
+
+
+resolve : String -> Int -> Int -> ShaderInfo
+resolve name surfaceFlags contentFlags =
     case Dict.get name shaderLookup of
         Just pipeline ->
-            let
-                newPipeline =
-                    { pipeline | flags = flags }
-            in
-            Custom newPipeline
+            { def = Custom pipeline, contentFlags = contentFlags, surfaceFlags = surfaceFlags }
 
         Nothing ->
-            UseTexture (Pipeline.withTexture name)
+            { def = UseTexture (Pipeline.withTexture name), contentFlags = contentFlags, surfaceFlags = surfaceFlags }
 
 
 shaderLookup =

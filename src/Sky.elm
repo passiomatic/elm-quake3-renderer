@@ -11,6 +11,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4 exposing (Vec4, vec4)
 import BoundingBox exposing (BoundingBox)
 import Shaders.Pipeline as Pipeline exposing (ShaderPipeline, Vertex)
+import Shaders.ShaderDef as ShaderDef exposing (ShaderInfo, ShaderDef(..))
 import WebGL.Texture as Texture exposing (Texture)
 import WebGL exposing (Mesh)
 import Array exposing (Array)
@@ -20,26 +21,32 @@ domeSubdivisions =
     8
 
 
-{-| Return, if any, the first sky shader pipeline defined in the arena.
+{-| Return, if any, the first sky shader defined in the arena.
 -}
-findShader : List ShaderPipeline -> Maybe ShaderPipeline
+findShader : Array ShaderInfo -> Maybe ShaderDef
 findShader shaders =
     shaders
-        |> List.filter Pipeline.isSky
-        |> List.head
+        |> Array.filter (\info -> ShaderDef.isSky info)
+        |> Array.get 0
+        |> Maybe.map .def
 
 
 
-bindShader: Maybe ShaderPipeline -> List (Mesh Vertex) -> List ShaderPipeline 
+bindShader: Maybe ShaderDef -> List (Mesh Vertex) -> List ShaderPipeline 
 bindShader maybeShader domeMeshes = 
 
     case maybeShader of 
         Just shader -> 
-            domeMeshes
-                |> List.map (\mesh -> 
-                    shader
-                        |> Pipeline.setMesh mesh
-                ) 
+            case shader of  
+                Custom pipeline ->  
+                    domeMeshes
+                        |> List.map (\mesh ->                             
+                            Pipeline.setMesh mesh pipeline
+                        ) 
+                UseTexture _ -> 
+                    -- We need a specific shader for sky, skip it
+                    [ Pipeline.empty ]
+
 
         Nothing ->
             -- Just skip sky

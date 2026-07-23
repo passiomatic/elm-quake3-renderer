@@ -9,12 +9,10 @@ module Shaders.Pipeline exposing
     , addStage
     , default
     , empty
-    , isSky
     , model
     , noShader
     , setLightmap
     , setMesh
-    , setSkyFlag
     , sortAsBanner
     , sortAsFarthest
     , sortAsNearest
@@ -30,7 +28,6 @@ module Shaders.Pipeline exposing
     )
 
 import Array exposing (Array)
-import Bitwise exposing (and, or)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3)
@@ -57,21 +54,6 @@ type SortOrder
     | SortValue Int
 
 
-
-{- Useful surface flags.
-
-   See https://tinyurl.com/y3y56yvq
--}
-
-
-skySurface =
-    0x04
-
-
-isSky pipeline =
-    and pipeline.flags skySurface /= 0
-
-
 {-| A shader pipeline with multiple stages and optionally bound to a mesh.
 
 This is used to describe default and custom WebGL shaders.
@@ -79,8 +61,6 @@ This is used to describe default and custom WebGL shaders.
 -}
 type alias ShaderPipeline =
     { sortOrder : SortOrder
-    , flags : Int
-    -- , contentsFlags: Int
     , lightmap : String
     , mesh : Maybe (Mesh Vertex)
     , stages : List Stage
@@ -133,8 +113,6 @@ type alias Varyings =
 empty : ShaderPipeline
 empty =
     { sortOrder = Opaque
-    , flags = 0
-    -- , contentsFlags = 0
     , lightmap = "$whiteimage"
     , mesh = Nothing
     , stages = []
@@ -149,11 +127,6 @@ setMesh mesh pipeline =
 setLightmap : String -> ShaderPipeline -> ShaderPipeline
 setLightmap name pipeline =
     { pipeline | lightmap = name }
-
-
-setSkyFlag : ShaderPipeline -> ShaderPipeline
-setSkyFlag pipeline =
-    { pipeline | flags = or pipeline.flags skySurface }
 
 
 addStage : Stage -> ShaderPipeline -> ShaderPipeline

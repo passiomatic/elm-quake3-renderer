@@ -27,14 +27,14 @@ import Math.Vector2 as Vec2 exposing (Vec2, vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Plane exposing (Plane)
 import Shaders.Pipeline exposing (Vertex)
-import Shaders.ShaderDef exposing (ShaderDef)
+import Shaders.ShaderDef exposing (ShaderInfo)
 
 
 {-| A serialized Quake 3 Arena file.
 -}
 type alias Arena =
     { entities : List GameEntity
-    , shaders : Array ShaderDef
+    , shaders : Array ShaderInfo
     , planes : Maybe (Array Plane)
     , nodes : Maybe (Array BspNodeLump)
     , leaves : Maybe (Array BspLeafLump)

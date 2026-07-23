@@ -4,7 +4,7 @@ module Scene exposing
     , draw
     )
 
-import Arena exposing (Arena, BrushLump, FaceLump, ModelLump)
+import Arena exposing (Arena, FaceLump)
 import Array exposing (Array)
 import Bezier
 import BoundingBox exposing (BoundingBox)
@@ -16,7 +16,7 @@ import Math.Vector3 as Vector3 exposing (Vec3)
 import Math.Vector4 as Vector4 exposing (Vec4)
 import Plane exposing (Plane)
 import Shaders.Pipeline as Pipeline exposing (ShaderPipeline, SortOrder(..), TextureDef(..), Vertex)
-import Shaders.ShaderDef exposing (ShaderDef(..))
+import Shaders.ShaderDef as ShaderDef  exposing (ShaderInfo, ShaderDef(..))
 import Sky
 import WebGL exposing (Entity, Mesh)
 --import WebGL.Settings.DepthTest as DepthTest
@@ -117,22 +117,23 @@ compile arena =
                 -- Unable to create a valid BSP tree
                 |> Maybe.withDefault Empty
 
-        -- TODO
+        -- TODO use contentFlags value from shaders to filter out faces which do not block player movement
         -- brushes =
         --     makeBrushes arena.planes arena.brushSides arena.brushes
         ( newVertices, faces ) =
             makeFaces arena.vertices arena.meshIndices arena.faces
 
-        -- _ =
-        --     Debug.log "shaders" (Array.map .name arena.shaders)
-        shaders =
-            groupFaces faces
-                |> makeShaders newVertices arena.shaders
-
+        -- TODO partition shaders sky, arena and bind them to meshes
         skyShaders =
             Sky.bindShader
-                (Sky.findShader shaders)
+                (Sky.findShader arena.shaders)
                 (Sky.makeMesh 50)
+
+        shaders =
+            arena.shaders
+                |> removeSkyShader
+                |> makeShaders newVertices (groupFaces faces)
+
 
         -- TODO combine with lightmaps
         textures =
@@ -145,7 +146,6 @@ compile arena =
 
         arenaShaders =
             shaders
-                |> removeSkyShader
                 |> sortShaders
     in
     { tree = tree
@@ -248,8 +248,8 @@ tessellationLevel =
     8
 
 
-makeShaders : Array Vertex -> Array ShaderDef -> List ( ( Int, Int, Int ), List Face ) -> List ShaderPipeline
-makeShaders vertices defs groupedFaces =
+makeShaders : Array Vertex -> List ( ( Int, Int, Int ), List Face ) -> Array ShaderInfo -> List ShaderPipeline
+makeShaders vertices groupedFaces infos =
     List.map
         (\( ( shaderIndex, lightmapIndex, faceType ), faces ) ->
             let
@@ -260,9 +260,9 @@ makeShaders vertices defs groupedFaces =
                     WebGL.indexedTriangles (Array.toList vertices) indices
 
                 shader =
-                    case Array.get shaderIndex defs of
-                        Just ref ->
-                            case ref of
+                    case Array.get shaderIndex infos of
+                        Just info ->
+                            case info.def of
                                 Custom shader_ ->
                                     shader_
                                         |> Pipeline.setLightmap (lightmapName lightmapIndex)
@@ -341,9 +341,9 @@ sortShaders shaders =
         shaders
 
 
-removeSkyShader : List ShaderPipeline -> List ShaderPipeline
-removeSkyShader shaders =
-    List.filter (\shader -> not (Pipeline.isSky shader)) shaders
+removeSkyShader : Array ShaderInfo -> Array ShaderInfo
+removeSkyShader infos =
+    Array.filter (\info -> not (ShaderDef.isSky info)) infos
 
 
 {-| Group given faces by their shader and lightmap indices.

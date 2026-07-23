@@ -19,7 +19,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4 exposing (Vec4, vec4)
 import Plane exposing (Plane)
 import Shaders.Pipeline as Pipeline exposing (Vertex)
-import Shaders.ShaderDef as ShaderDef exposing (ShaderDef)
+import Shaders.ShaderDef as ShaderDef exposing (ShaderInfo)
 import Vendor.Image as Image
 import Vendor.Image.BMP as BMP
 
@@ -230,7 +230,7 @@ vertexParser =
         |> P.keep colorParser
 
 
-parseShaders : Bytes -> LumpRef -> Maybe (Array ShaderDef)
+parseShaders : Bytes -> LumpRef -> Maybe (Array ShaderInfo)
 parseShaders data { offset, length } =
     P.run
         (P.randomAccess
@@ -244,12 +244,12 @@ parseShaders data { offset, length } =
         |> Result.toMaybe
 
 
-shaderParser : Parser c e ShaderDef
+shaderParser : Parser c e ShaderInfo
 shaderParser = 
     P.succeed ShaderDef.resolve
         |> P.keep (P.map trimNulls (P.string 64))
         |> P.keep (P.signedInt32 LE)
-        |> P.skip 4
+        |> P.keep (P.signedInt32 LE)
 
 
 parseFaces : Bytes -> LumpRef -> Maybe (Array FaceLump)

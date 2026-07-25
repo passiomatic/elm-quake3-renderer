@@ -1,4 +1,4 @@
-module Shaders.ShaderDef exposing (ShaderDef(..), ShaderInfo, isSky, isSolid, resolve)
+module Shaders.ShaderDef exposing (ShaderDef(..), ShaderInfo, contentsSolid, isSky, isSolid, resolve)
 
 {-| Shader definition.
 

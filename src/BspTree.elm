@@ -47,7 +47,8 @@ type alias BspLeaf =
 
 
 {-| Build a BSP tree from nodes, leaves, planes, and the (leaf -> brush indices)
-indirection table paired with the already-resolved solid brushes.
+indirection table paired with the already-resolved brushes (`Brush.makeBrushes`'s
+array, indexed by the original BSP brush index — never compacted).
 -}
 make : Array BspNodeLump -> Array BspLeafLump -> Array Plane -> Array Int -> Array Brush -> BspTree
 make nodes leaves planes leafBrushIndices brushes =
@@ -95,6 +96,7 @@ makeLeaf leafBrushIndices brushes lump =
         Array.slice lump.firstBrushIndex (lump.firstBrushIndex + lump.brushCount) leafBrushIndices
             |> Array.toList
             |> List.filterMap (\index -> Array.get index brushes)
+            |> List.filter Brush.isSolid
     }
 
 

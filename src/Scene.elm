@@ -125,7 +125,6 @@ compile arena =
         ( newVertices, faces ) =
             makeFaces arena.vertices arena.meshIndices arena.faces
 
-        -- TODO partition shaders sky, arena and bind them to meshes
         skyShaders =
             Sky.bindShader
                 (Sky.findShader arena.shaders)
@@ -140,13 +139,9 @@ compile arena =
             makeShaders newVertices groupedFaces arena.shaders
 
 
-        -- TODO combine with lightmaps
+        -- TODO combine with lightmaps since those are texture too
         textures =
-            List.map
-                (\shader ->
-                    Pipeline.textures shader
-                )
-                shaders
+            List.map Pipeline.textures (shaders ++ skyShaders)
                 |> List.concat
 
         arenaShaders =

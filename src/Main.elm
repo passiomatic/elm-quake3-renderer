@@ -6,6 +6,7 @@ import BoundingBox exposing (BoundingBox)
 import Browser
 import Browser.Dom as Dom
 import Browser.Events as E
+import Bsp.Trace as Trace
 import BspParser
 import BspTree exposing (BspLeaf, BspTree(..))
 import Camera exposing (Camera, Movement(..))
@@ -289,17 +290,26 @@ update action model =
                             world.camera
                                 |> Camera.update seconds world.movement
 
+                        clippedCamera =
+                            -- Stop the desired movement at whatever solid geometry it
+                            -- would otherwise pass through, without Camera.update itself
+                            -- needing to know about the BSP tree.
+                            { newCamera
+                                | position =
+                                    (Trace.trace world.tree world.camera.position newCamera.position).endPosition
+                            }
+
                         newLeaf =
                             -- Recalculate only if moved
                             if world.cameraDidMove then
-                                BspTree.findLeaf world.tree newCamera.position
+                                BspTree.findLeaf world.tree clippedCamera.position
 
                             else
                                 world.currentBspLeaf
                     in
                     ( Ready
                         { world
-                            | camera = newCamera
+                            | camera = clippedCamera
                             , fps = Fps.update dt world.fps
                             , elapsedTime = world.elapsedTime + seconds
                             , currentBspLeaf = newLeaf

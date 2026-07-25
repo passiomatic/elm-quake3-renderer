@@ -6,7 +6,7 @@ import BoundingBox exposing (BoundingBox)
 import Browser
 import Browser.Dom as Dom
 import Browser.Events as E
-import Bsp.Trace as Trace
+import BspTracer
 import BspParser
 import BspTree exposing (BspLeaf, BspTree(..))
 import Camera exposing (Camera, Movement(..))
@@ -296,7 +296,7 @@ update action model =
                             -- needing to know about the BSP tree.
                             { newCamera
                                 | position =
-                                    (Trace.trace world.tree world.camera.position newCamera.position).endPosition
+                                    (BspTracer.trace world.tree world.camera.position newCamera.position).endPosition
                             }
 
                         newLeaf =

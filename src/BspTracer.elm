@@ -1,4 +1,4 @@
-module Bsp.Trace exposing
+module BspTracer exposing
     ( CheckBrushResult
     , NodeVisit
     , Side(..)
@@ -171,7 +171,7 @@ by the sign on `EPSILON`. The two branches are meant to be mirror images of each
 *past* the plane crossing, and the side checked second nudged slightly *before* it, so
 the two recursions slightly overlap rather than leaving an untested gap right at the
 plane). Mirroring branch two's shape (rather than copying branch one verbatim) is what
-makes that true in both branches — verified by `TraceTest.elm`, which checks the two
+makes that true in both branches — verified by `BspTracerTest.elm`, which checks the two
 sub-segments overlap instead of gapping for both straddling directions.
 -}
 splitAtNode : Plane -> Float -> Float -> Vec3 -> Vec3 -> List NodeVisit

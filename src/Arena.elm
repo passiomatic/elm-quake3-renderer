@@ -17,8 +17,6 @@ module Arena exposing
 {-| Arena (.bsp) file data structures.
 -}
 
---import Math.Vector4 as Vec4 exposing (Vec4, vec4)
-
 import Array exposing (Array)
 import BoundingBox exposing (BoundingBox)
 import Dict exposing (Dict)
@@ -96,13 +94,6 @@ type alias BrushLump =
     , sideCount : Int
     , shaderIndex : Int
     }
-
-
-
--- type alias BrushSideLump =
---     { planeIndex : Int
---     , shaderIndex : Int
---     }
 
 
 {-| Volumetric shaders (typically fog) which affect the rendering of a particular group of faces.

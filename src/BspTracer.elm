@@ -154,14 +154,25 @@ type alias NodeVisit =
     }
 
 
-{-| Given a node's splitting plane and a segment [start, end] — itself already known to
-cover the fraction range [startFraction, endFraction] of some larger original trace —
-work out which child(ren) of the node need checking, splitting the segment at the plane
-when it straddles both sides.
+{-| Given a node's splitting plane, the radius of the sphere being traced (0 for a plain
+ray), and a segment [start, end] — itself already known to cover the fraction range
+[startFraction, endFraction] of some larger original trace — work out which child(ren)
+of the node need checking, splitting the segment at the plane when it straddles both
+sides (or comes within `radius` of it).
 
 Deliberately isolated from real tree/leaf/brush data (see docs/collisions.md "Checking
 the Nodes") — this only knows about a single plane, and returns the sub-segments to
 visit rather than what's actually inside them.
+
+Sphere-trace padding (docs/collisions.md "Tracing with a Sphere"): a sphere of radius
+`r` centered at signed distance `d` from the plane touches it whenever `|d| <= r`, not
+just `d == 0`, so the "entirely in front"/"entirely behind" fast paths generalize from
+`>= 0`/`< 0` to `>= radius`/`< -radius`. The split-fraction formulas below originally
+solved for where `d(f) = 0` (nudged by `±epsilon` for float safety); generalized for a
+sphere they instead solve for where `d(f) = ∓radius` (the edge of the sphere's overlap
+zone), We get that for free by simply replacing every bare `epsilon` with
+`radius + epsilon` — it reduces to exactly the original ray-trace formulas when
+`radius = 0`.
 
 Note: this does NOT follow `docs/collisions.md`'s source listing literally. That
 listing's first branch (`startDistance < endDistance`) assigns `fraction1`/`fraction2`
@@ -174,19 +185,22 @@ plane). Mirroring branch two's shape (rather than copying branch one verbatim) i
 makes that true in both branches — verified by `BspTracerTest.elm`, which checks the two
 sub-segments overlap instead of gapping for both straddling directions.
 -}
-splitAtNode : Plane -> Float -> Float -> Vec3 -> Vec3 -> List NodeVisit
-splitAtNode plane startFraction endFraction start end =
+splitAtNode : Float -> Plane -> Float -> Float -> Vec3 -> Vec3 -> List NodeVisit
+splitAtNode radius plane startFraction endFraction start end =
     let
         startDistance =
             Plane.distance plane start
 
         endDistance =
             Plane.distance plane end
+
+        paddedEpsilon =
+            radius + epsilon
     in
-    if startDistance >= 0 && endDistance >= 0 then
+    if startDistance >= radius && endDistance >= radius then
         [ { side = Front, start = start, end = end, startFraction = startFraction, endFraction = endFraction } ]
 
-    else if startDistance < 0 && endDistance < 0 then
+    else if startDistance < -radius && endDistance < -radius then
         [ { side = Back, start = start, end = end, startFraction = startFraction, endFraction = endFraction } ]
 
     else
@@ -197,14 +211,14 @@ splitAtNode plane startFraction endFraction start end =
             ( side, fraction1, fraction2 ) =
                 if startDistance < endDistance then
                     ( Back
-                    , (startDistance - epsilon) * inverseDistance
-                    , (startDistance + epsilon) * inverseDistance
+                    , (startDistance - paddedEpsilon) * inverseDistance
+                    , (startDistance + paddedEpsilon) * inverseDistance
                     )
 
                 else
                     ( Front
-                    , (startDistance + epsilon) * inverseDistance
-                    , (startDistance - epsilon) * inverseDistance
+                    , (startDistance + paddedEpsilon) * inverseDistance
+                    , (startDistance - paddedEpsilon) * inverseDistance
                     )
 
             otherSide =
@@ -264,12 +278,16 @@ whichever brush produced that result — it does *not* get forced to 0. A caller
 just does `position = result.endPosition` would, in that specific case, still move the
 full requested distance despite being stuck. Worth remembering when wiring this into
 the camera later.
+
+`radius` (0 for a plain ray) only pads node-splitting (`splitAtNode`) so far — per-brush
+plane checks (`checkBrush`) aren't padded yet, so this isn't a complete sphere-trace
+until that catches up.
 -}
-trace : BspTree -> Vec3 -> Vec3 -> TraceResult
-trace tree start end =
+trace : BspTree -> Float -> Vec3 -> Vec3 -> TraceResult
+trace tree radius start end =
     let
         state =
-            walk tree 0 1 start end { fraction = 1, allSolid = False, plane = Nothing }
+            walk radius tree 0 1 start end { fraction = 1, allSolid = False, plane = Nothing }
     in
     { fraction = state.fraction
     , endPosition =
@@ -290,8 +308,8 @@ type alias TraceState =
     }
 
 
-walk : BspTree -> Float -> Float -> Vec3 -> Vec3 -> TraceState -> TraceState
-walk tree startFraction endFraction start end state =
+walk : Float -> BspTree -> Float -> Float -> Vec3 -> Vec3 -> TraceState -> TraceState
+walk radius tree startFraction endFraction start end state =
     case tree of
         Empty ->
             state
@@ -300,12 +318,12 @@ walk tree startFraction endFraction start end state =
             List.foldl (checkLeafBrush start end startFraction endFraction) state leaf.brushes
 
         Node node ->
-            splitAtNode node.plane startFraction endFraction start end
-                |> List.foldl (walkVisit node) state
+            splitAtNode radius node.plane startFraction endFraction start end
+                |> List.foldl (walkVisit radius node) state
 
 
-walkVisit : BspNode -> NodeVisit -> TraceState -> TraceState
-walkVisit node visit state =
+walkVisit : Float -> BspNode -> NodeVisit -> TraceState -> TraceState
+walkVisit radius node visit state =
     let
         subtree =
             case visit.side of
@@ -315,7 +333,7 @@ walkVisit node visit state =
                 Back ->
                     node.back
     in
-    walk subtree visit.startFraction visit.endFraction visit.start visit.end state
+    walk radius subtree visit.startFraction visit.endFraction visit.start visit.end state
 
 
 checkLeafBrush : Vec3 -> Vec3 -> Float -> Float -> Brush -> TraceState -> TraceState

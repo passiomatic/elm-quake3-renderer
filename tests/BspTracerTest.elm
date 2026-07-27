@@ -5,7 +5,7 @@ import Brush exposing (Brush)
 import BspTracer exposing (Side(..), checkBrush, splitAtNode, trace)
 import BspTree exposing (BspTree(..))
 import Expect
-import Math.Vector3 exposing (vec3)
+import Math.Vector3 as Vector3 exposing (vec3)
 import Plane exposing (Plane)
 import Test exposing (Test, describe, test)
 
@@ -98,19 +98,19 @@ splitAtNodeSuite =
     describe "BspTracer.splitAtNode"
         [ test "segment entirely in front: single Front visit, unchanged" <|
             \_ ->
-                splitAtNode planeX0 0 1 (vec3 5 0 0) (vec3 10 0 0)
+                splitAtNode 0 planeX0 0 1 (vec3 5 0 0) (vec3 10 0 0)
                     |> Expect.equal
                         [ { side = Front, start = vec3 5 0 0, end = vec3 10 0 0, startFraction = 0, endFraction = 1 } ]
 
         , test "segment entirely behind: single Back visit, unchanged" <|
             \_ ->
-                splitAtNode planeX0 0 1 (vec3 -5 0 0) (vec3 -10 0 0)
+                splitAtNode 0 planeX0 0 1 (vec3 -5 0 0) (vec3 -10 0 0)
                     |> Expect.equal
                         [ { side = Back, start = vec3 -5 0 0, end = vec3 -10 0 0, startFraction = 0, endFraction = 1 } ]
 
         , test "straddling front-to-back: visits overlap at the crossing, not gap" <|
             \_ ->
-                case splitAtNode planeX0 0 1 (vec3 10 0 0) (vec3 -10 0 0) of
+                case splitAtNode 0 planeX0 0 1 (vec3 10 0 0) (vec3 -10 0 0) of
                     [ first, second ] ->
                         Expect.all
                             [ \_ -> Expect.equal Front first.side
@@ -126,7 +126,7 @@ splitAtNodeSuite =
 
         , test "straddling back-to-front: visits overlap at the crossing, not gap" <|
             \_ ->
-                case splitAtNode planeX0 0 1 (vec3 -10 0 0) (vec3 10 0 0) of
+                case splitAtNode 0 planeX0 0 1 (vec3 -10 0 0) (vec3 10 0 0) of
                     [ first, second ] ->
                         Expect.all
                             [ \_ -> Expect.equal Back first.side
@@ -144,7 +144,7 @@ splitAtNodeSuite =
             \_ ->
                 -- Same crossing as above, but nested inside an outer trace's [0.2, 0.6] slice
                 -- (as would happen a couple of levels deep in a real recursive trace).
-                case splitAtNode planeX0 0.2 0.6 (vec3 10 0 0) (vec3 -10 0 0) of
+                case splitAtNode 0 planeX0 0.2 0.6 (vec3 10 0 0) (vec3 -10 0 0) of
                     [ first, second ] ->
                         Expect.all
                             [ \_ -> first.startFraction |> Expect.within (Expect.Absolute 1.0e-6) 0.2
@@ -155,6 +155,24 @@ splitAtNodeSuite =
 
                     visits ->
                         Expect.fail ("expected exactly 2 visits, got " ++ String.fromInt (List.length visits))
+
+        , test "radius > 0 shifts each split point by exactly radius world units vs. radius = 0" <|
+            \_ ->
+                -- Hand-derived: replacing epsilon with (radius + epsilon) in the fraction
+                -- formulas means the split point moves by radius * inverseDistance in
+                -- fraction space, which is exactly `radius` world units along the segment.
+                case ( splitAtNode 0 planeX0 0 1 (vec3 10 0 0) (vec3 -10 0 0), splitAtNode 5 planeX0 0 1 (vec3 10 0 0) (vec3 -10 0 0) ) of
+                    ( [ rayFirst, raySecond ], [ paddedFirst, paddedSecond ] ) ->
+                        Expect.all
+                            [ \_ -> paddedFirst.end |> Expect.equal (vec3 -5.03125 0 0)
+                            , \_ -> paddedSecond.start |> Expect.equal (vec3 5.03125 0 0)
+                            , \_ -> Vector3.getX rayFirst.end - Vector3.getX paddedFirst.end |> Expect.within (Expect.Absolute 1.0e-9) 5
+                            , \_ -> Vector3.getX paddedSecond.start - Vector3.getX raySecond.start |> Expect.within (Expect.Absolute 1.0e-9) 5
+                            ]
+                            ()
+
+                    _ ->
+                        Expect.fail "expected exactly 2 visits from both calls"
         ]
 
 
@@ -192,7 +210,7 @@ traceSuite =
     describe "BspTracer.trace"
         [ test "segment entirely in open air: no collision" <|
             \_ ->
-                trace testTree (vec3 20 0 0) (vec3 10 0 0)
+                trace testTree 0 (vec3 20 0 0) (vec3 10 0 0)
                     |> Expect.equal
                         { fraction = 1
                         , endPosition = vec3 10 0 0
@@ -205,7 +223,7 @@ traceSuite =
                 -- Hand-derived (exact rational arithmetic, see conversation): crosses the
                 -- node's plane at x=5, then the wall's front face at x=0, stopping exactly
                 -- EPSILON (1/32) short of it, at fraction 639/1280 = 0.49921875.
-                trace testTree (vec3 20 0 0) (vec3 -20 0 0)
+                trace testTree 0 (vec3 20 0 0) (vec3 -20 0 0)
                     |> Expect.all
                         [ .fraction >> Expect.within (Expect.Absolute 1.0e-9) 0.49921875
                         , .endPosition >> Expect.equal (vec3 0.03125 0 0)
@@ -218,7 +236,7 @@ traceSuite =
                 -- Known limitation carried over from the tutorial (see BspTracer.trace's
                 -- doc comment): allSolid alone doesn't clip the movement, a caller must
                 -- check for it separately before trusting endPosition/fraction.
-                trace testTree (vec3 -5 0 0) (vec3 -6 0 0)
+                trace testTree 0 (vec3 -5 0 0) (vec3 -6 0 0)
                     |> Expect.all
                         [ .allSolid >> Expect.equal True
                         , .fraction >> Expect.equal 1

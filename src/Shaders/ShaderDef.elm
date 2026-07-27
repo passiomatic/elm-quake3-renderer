@@ -14,7 +14,7 @@ import Shaders.Q3dm2 exposing (..)
 import Shaders.Q3dm3 exposing (..)
 
 
-{-| Wrap a shader defintion and flags read from the BSP file.
+{-| Wrap a shader definition and flags read from the BSP file.
 -}
 type alias ShaderInfo =
     { def : ShaderDef

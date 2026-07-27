@@ -96,12 +96,14 @@ The illusion of a bigger, unreachable sky surface above the camera is achieved u
 
 The Quake 3 Arena rendering engine has another capability when come to skies: you can apply a number of landscape textures and a fixed sky texture to a box containing the arena (a so-called "sky box"). This has been done a lot on the previous Quake instalment but never really used in full potential on the id's maps on Quake 3. The current Elm renderer doesn't support this feature.
 
+### Extra features
+
+* **Collision detection**. Block the camera when rigid bodies are crossed, like a real first-person shooter. This was mostly done thanks to Claude Code and following this [DevMaster tutorial][10]. Since I'm still studying/refining it currently lives in the `collisions` branch. 
 
 ## Missing features 
 
 There are some missing features that I would like to implement in the future: 
 
-* **Collision detection**. Block the camera when rigid bodies are crossed, like a real first-person shooter.
 * **Volumetric fog**. This is missing from the JavaScript version too. 
 * **Billboards**. Billboards always face the viewer so they allow to give the illusion of a 3D volume to a 2D surface.
 * **alphaGen lightingSpecular** shader directive. 
@@ -120,3 +122,4 @@ There are some missing features that I would like to implement in the future:
 [7]: https://package.elm-lang.org/packages/zwilias/elm-bytes-parser/latest/
 [8]: https://package.elm-lang.org/packages/zwilias/elm-bytes-parser/latest/Bytes-Parser#randomAccess
 [9]: https://package.elm-lang.org/packages/elm-explorations/webgl/latest/WebGL#indexedTriangles
+[10]: https://web.archive.org/web/20070105223847/http://www.devmaster.net/articles/quake3collision/

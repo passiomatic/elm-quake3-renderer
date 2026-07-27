@@ -47,7 +47,8 @@ noCollision =
     }
 
 
-{-| Clip the segment [start, end] against a single solid brush's planes.
+{-| Clip the segment [start, end] against a single solid brush's planes, treating the
+segment as sweeping a sphere of `radius` (0 for a plain ray) rather than a bare point.
 
 Ports the tutorial's `CheckBrush`. `startFraction`/`endFraction`/`startsOut`/`endsOut`
 are exposed as-is, mirroring the tutorial's own bookkeeping variables, rather than
@@ -57,10 +58,16 @@ running fraction from the rest of the BSP walk, which a single-brush function do
 have. That comparison belongs to the caller (the leaf/node walk in `trace` below).
 `plane` is the brush side responsible for `startFraction` (the entry plane) — carried
 forward so a caller can eventually use it for wall-sliding.
+
+Sphere padding (docs/collisions.md "Tracing with a Sphere"): each plane is pushed
+outward by `radius` along its normal before the usual distance checks — the standard
+Minkowski-sum technique for sphere-vs-convex-polyhedron collision. Since
+`Plane.distance plane point` is already `dot(normal, point) - plane.distance`, pushing
+the plane out by `radius` is just subtracting `radius` from that.
 -}
-checkBrush : Vec3 -> Vec3 -> Brush -> CheckBrushResult
-checkBrush start end brush =
-    checkPlanes start end brush.planes { startFraction = -1, endFraction = 1, startsOut = False, endsOut = False, plane = Nothing }
+checkBrush : Float -> Vec3 -> Vec3 -> Brush -> CheckBrushResult
+checkBrush radius start end brush =
+    checkPlanes radius start end brush.planes { startFraction = -1, endFraction = 1, startsOut = False, endsOut = False, plane = Nothing }
         |> Maybe.map resolveAllSolid
         |> Maybe.withDefault noCollision
 
@@ -91,8 +98,8 @@ resolveAllSolid acc =
 {-| `Nothing` means the segment is provably outside this brush: some plane had it
 entirely in front, which rules out the whole (convex) brush at once.
 -}
-checkPlanes : Vec3 -> Vec3 -> List Plane -> Acc -> Maybe Acc
-checkPlanes start end planes acc =
+checkPlanes : Float -> Vec3 -> Vec3 -> List Plane -> Acc -> Maybe Acc
+checkPlanes radius start end planes acc =
     case planes of
         [] ->
             Just acc
@@ -100,10 +107,10 @@ checkPlanes start end planes acc =
         plane :: rest ->
             let
                 startDistance =
-                    Plane.distance plane start
+                    Plane.distance plane start - radius
 
                 endDistance =
-                    Plane.distance plane end
+                    Plane.distance plane end - radius
 
                 acc_ =
                     { acc
@@ -117,7 +124,7 @@ checkPlanes start end planes acc =
 
             else if startDistance <= 0 && endDistance <= 0 then
                 -- Both behind this plane; it'll get clipped by another side, if any.
-                checkPlanes start end rest acc_
+                checkPlanes radius start end rest acc_
 
             else if startDistance > endDistance then
                 -- Segment enters the brush through this plane.
@@ -126,14 +133,14 @@ checkPlanes start end planes acc =
                         (startDistance - epsilon) / (startDistance - endDistance)
                 in
                 if fraction > acc_.startFraction then
-                    checkPlanes start end rest { acc_ | startFraction = fraction, plane = Just plane }
+                    checkPlanes radius start end rest { acc_ | startFraction = fraction, plane = Just plane }
 
                 else
-                    checkPlanes start end rest acc_
+                    checkPlanes radius start end rest acc_
 
             else
                 -- Segment leaves the brush through this plane.
-                checkPlanes start end rest
+                checkPlanes radius start end rest
                     { acc_ | endFraction = min acc_.endFraction ((startDistance + epsilon) / (startDistance - endDistance)) }
 
 
@@ -279,9 +286,9 @@ just does `position = result.endPosition` would, in that specific case, still mo
 full requested distance despite being stuck. Worth remembering when wiring this into
 the camera later.
 
-`radius` (0 for a plain ray) only pads node-splitting (`splitAtNode`) so far — per-brush
-plane checks (`checkBrush`) aren't padded yet, so this isn't a complete sphere-trace
-until that catches up.
+`radius` (0 for a plain ray) pads both node-splitting (`splitAtNode`) and per-brush plane
+checks (`checkBrush`) — a full sphere-trace. The caller still owns deciding what value to
+pass; `radius` itself is just plumbed straight through.
 -}
 trace : BspTree -> Float -> Vec3 -> Vec3 -> TraceResult
 trace tree radius start end =
@@ -315,7 +322,7 @@ walk radius tree startFraction endFraction start end state =
             state
 
         Leaf leaf ->
-            List.foldl (checkLeafBrush start end startFraction endFraction) state leaf.brushes
+            List.foldl (checkLeafBrush radius start end startFraction endFraction) state leaf.brushes
 
         Node node ->
             splitAtNode radius node.plane startFraction endFraction start end
@@ -336,11 +343,11 @@ walkVisit radius node visit state =
     walk radius subtree visit.startFraction visit.endFraction visit.start visit.end state
 
 
-checkLeafBrush : Vec3 -> Vec3 -> Float -> Float -> Brush -> TraceState -> TraceState
-checkLeafBrush start end startFraction endFraction brush state =
+checkLeafBrush : Float -> Vec3 -> Vec3 -> Float -> Float -> Brush -> TraceState -> TraceState
+checkLeafBrush radius start end startFraction endFraction brush state =
     let
         result =
-            checkBrush start end brush
+            checkBrush radius start end brush
     in
     if not result.startsOut then
         -- Tutorial: always returns here regardless of endsOut; only allSolid may change.

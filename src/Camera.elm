@@ -3,6 +3,7 @@ module Camera exposing
     , Movement(..)
     , default
     , init
+    , playerRadius
     , update
     , view
     )

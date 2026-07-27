@@ -296,9 +296,7 @@ update action model =
                             -- needing to know about the BSP tree.
                             { newCamera
                                 | position =
-                                    -- Radius stays 0 (plain ray) until Step 13 wires in Camera.playerRadius,
-                                    -- once checkBrush is padded too (Step 12).
-                                    (BspTracer.trace world.tree 0 world.camera.position newCamera.position).endPosition
+                                    (BspTracer.trace world.tree Camera.playerRadius world.camera.position newCamera.position).endPosition
                             }
 
                         newLeaf =

@@ -40,7 +40,7 @@ suite =
     describe "BspTracer.checkBrush"
         [ test "segment fully in front of a single-plane brush: no collision" <|
             \_ ->
-                checkBrush (vec3 5 0 0) (vec3 10 0 0) halfSpaceBrush
+                checkBrush 0 (vec3 5 0 0) (vec3 10 0 0) halfSpaceBrush
                     |> Expect.equal
                         { startFraction = -1
                         , endFraction = 1
@@ -52,7 +52,7 @@ suite =
 
         , test "segment fully outside a multi-plane (box) brush: no collision" <|
             \_ ->
-                checkBrush (vec3 20 5 5) (vec3 30 5 5) cubeBrush
+                checkBrush 0 (vec3 20 5 5) (vec3 30 5 5) cubeBrush
                     |> Expect.equal
                         { startFraction = -1
                         , endFraction = 1
@@ -66,7 +66,7 @@ suite =
             \_ ->
                 let
                     result =
-                        checkBrush (vec3 -5 5 5) (vec3 15 5 5) cubeBrush
+                        checkBrush 0 (vec3 -5 5 5) (vec3 15 5 5) cubeBrush
                 in
                 Expect.all
                     [ .startFraction >> Expect.within (Expect.Absolute 1.0e-6) 0.2484375
@@ -80,9 +80,36 @@ suite =
 
         , test "segment starting and ending embedded in solid: allSolid is True" <|
             \_ ->
-                checkBrush (vec3 5 5 5) (vec3 6 5 5) cubeBrush
+                checkBrush 0 (vec3 5 5 5) (vec3 6 5 5) cubeBrush
                     |> .allSolid
                     |> Expect.equal True
+
+        , test "radius > 0 stops exactly radius world units earlier than the ray would" <|
+            \_ ->
+                -- Same segment as the hand-calculated box case above (length 20 along x),
+                -- but padded by radius = 3. Hand-derived: pushing the entry plane (x=0)
+                -- outward by 3 shifts the fraction by exactly 3/20 = 0.15, and the entry
+                -- point by exactly 3 world units, compared to the radius = 0 case.
+                let
+                    rayResult =
+                        checkBrush 0 (vec3 -5 5 5) (vec3 15 5 5) cubeBrush
+
+                    sphereResult =
+                        checkBrush 3 (vec3 -5 5 5) (vec3 15 5 5) cubeBrush
+                in
+                Expect.all
+                    [ \_ -> sphereResult.startFraction |> Expect.within (Expect.Absolute 1.0e-9) 0.0984375
+                    , \_ -> rayResult.startFraction - sphereResult.startFraction |> Expect.within (Expect.Absolute 1.0e-9) 0.15
+                    , \_ -> sphereResult.plane |> Expect.equal (Just { normal = vec3 -1 0 0, distance = 0 })
+                    , \_ ->
+                        -- Entry world position, computed the same way `trace` would.
+                        let
+                            entryX fraction =
+                                -5 + fraction * 20
+                        in
+                        entryX rayResult.startFraction - entryX sphereResult.startFraction |> Expect.within (Expect.Absolute 1.0e-9) 3
+                    ]
+                    ()
         ]
 
 
